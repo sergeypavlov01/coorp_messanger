@@ -62,6 +62,9 @@ class MainWindow(QMainWindow):
 
         self.send_button = QPushButton("Отправить")
 
+        self.input.returnPressed.connect(self._on_send_clicked)
+        self.send_button.clicked.connect(self._on_send_clicked)
+
         layout.addWidget(self.log)
         layout.addWidget(self.input)
         layout.addWidget(self.send_button)
@@ -70,6 +73,14 @@ class MainWindow(QMainWindow):
         # запущен. Иначе asyncio.create_task получит неработающий loop и
         # корутина будет отброшена с RuntimeWarning "was never awaited".
         QTimer.singleShot(0, self._start_background_tasks)
+
+    def _on_send_clicked(self) -> None:
+        text = self.input.text().strip()
+        if not text:
+            return
+        self.input.clear()
+        self.create_background_task(self.send_message(text))
+
 
     def _start_background_tasks(self) -> None:
         """Стартует фоновые корутины из контекста работающего event loop."""
@@ -158,28 +169,28 @@ class MainWindow(QMainWindow):
             # TODO: обработать respType из документации сервера и обновить UI.
             self.log.append(f"<< {data}")
 
-    async def send_message(
-        self,
-        text: str,
-        user_to: dict[str, Any] | None = None,
-    ) -> None:
-        """Отправляет общее или личное сообщение через активное соединение."""
-        if not text:
-            return
+    async def send_message(self, text: str, user_to: dict | None = None) -> None:
         if self.connection is None or not self.connection.isValid():
-            self.log.append("Нет активного соединения")
+            self.log.append("Нет соединения")
+            return
+        if not text.strip():
             return
 
         if user_to is None:
-            payload = json.dumps({"reqType": "reqSendAll", "text": text})
+            payload = json.dumps({
+                "reqType": "reqSendAll",
+                "message": text,
+            })
         else:
-            payload = json.dumps(
-                {"reqType": "reqSendMessage", "text": text, "userTo": user_to}
-            )
+            payload = json.dumps({
+                "reqType": "reqSendMessage",
+                "message": text,
+                "userTo": user_to,
+            })
 
         self.connection.sendTextMessage(payload)
-        self.log.append(f">> {text}")
-
+        logger.info("Отправлено: %s", payload)
+        self.log.append(f"{text}")
     @asyncClose
     async def closeEvent(self, event: Any) -> None:
         tasks = tuple(self.background_tasks)
