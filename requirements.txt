@@ -1,0 +1,5 @@
+PySide6==6.11.0
+python-dotenv==1.2.1
+qasync==0.28.0
+websockets==16.0
+dotenv
