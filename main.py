@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ui
 import asyncio
 import json
 import logging
@@ -42,32 +43,37 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Учебный WebSocket-мессенджер")
-        self.setMinimumSize(720, 480)
+
+        self.ui = ui.Ui_MainWindow()
+        self.ui.setupUi(self)
+
+        self.auth = self.ui.Auth
+        self.list_chats = self.ui.ListChats
+        self.chat = self.ui.Chat
 
         self.message_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self.background_tasks: set[asyncio.Task[Any]] = set()
         self.connection: QWebSocket | None = None
         self.username = "student"
 
-        central = QWidget()
-        self.setCentralWidget(central)
-        layout = QVBoxLayout(central)
+        # central = QWidget()
+        # self.setCentralWidget(central)
+        # layout = QVBoxLayout(central)
 
-        self.log = QTextEdit()
-        self.log.setReadOnly(True)
+        # self.log = QTextEdit()
+        # self.log.setReadOnly(True)
 
-        self.input = QLineEdit()
-        self.input.setPlaceholderText("Введите сообщение...")
+        # self.input = QLineEdit()
+        # self.input.setPlaceholderText("Введите сообщение...")
 
-        self.send_button = QPushButton("Отправить")
+        # self.send_button = QPushButton("Отправить")
 
-        self.input.returnPressed.connect(self._on_send_clicked)
-        self.send_button.clicked.connect(self._on_send_clicked)
+        # self.input.returnPressed.connect(self._on_send_clicked)
+        # self.send_button.clicked.connect(self._on_send_clicked)
 
-        layout.addWidget(self.log)
-        layout.addWidget(self.input)
-        layout.addWidget(self.send_button)
+        # layout.addWidget(self.log)
+        # layout.addWidget(self.input)
+        # layout.addWidget(self.send_button)
 
         # Запускаем подключение и обработчик очереди ТОЛЬКО когда event loop уже
         # запущен. Иначе asyncio.create_task получит неработающий loop и
@@ -150,7 +156,7 @@ class MainWindow(QMainWindow):
         self.connection.errorOccurred.connect(self._on_ws_error)
 
         logger.info("Подключаемся к %s", WS_URL)
-        self.log.append(f"Подключаемся к {WS_URL}...")
+        # self.log.append(f"Подключаемся к {WS_URL}...")
 
         self.connection.open(QUrl(WS_URL))
 
@@ -167,11 +173,11 @@ class MainWindow(QMainWindow):
         while True:
             data = await self.message_queue.get()
             # TODO: обработать respType из документации сервера и обновить UI.
-            self.log.append(f"<< {data}")
+            # self.log.append(f"<< {data}")
 
     async def send_message(self, text: str, user_to: dict | None = None) -> None:
         if self.connection is None or not self.connection.isValid():
-            self.log.append("Нет соединения")
+            # self.log.append("Нет соединения")
             return
         if not text.strip():
             return
@@ -190,7 +196,7 @@ class MainWindow(QMainWindow):
 
         self.connection.sendTextMessage(payload)
         logger.info("Отправлено: %s", payload)
-        self.log.append(f"{text}")
+        # self.log.append(f"{text}")
     @asyncClose
     async def closeEvent(self, event: Any) -> None:
         tasks = tuple(self.background_tasks)
