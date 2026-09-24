@@ -6,239 +6,181 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QFrame, QLabel, QLineEdit,
-    QMainWindow, QMenuBar, QPushButton, QSizePolicy,
-    QStatusBar, QTextBrowser, QToolBar, QWidget)
+    QListWidget, QMainWindow, QMenuBar, QPushButton, QSizePolicy,
+    QStatusBar, QTextEdit, QToolBar, QWidget)
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
-            MainWindow.setObjectName(u"MainWindow")
+            MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1109, 892)
+
         self.centralwidget = QWidget(MainWindow)
-        self.centralwidget.setObjectName(u"centralwidget")
+        self.centralwidget.setObjectName("centralwidget")
+
+        font14 = QFont()
+        font14.setPointSize(14)
+        font16 = QFont()
+        font16.setPointSize(16)
+        font9 = QFont()
+        font9.setPointSize(9)
+
+        # ----------------------------- Auth -----------------------------
         self.Auth = QWidget(self.centralwidget)
-        self.Auth.setObjectName(u"Auth")
-        self.Auth.setGeometry(QRect(470, 0, 431, 341))
-        self.Auth.setStyleSheet(u"background-color: #0D56A6; border-radius: 20")
+        self.Auth.setObjectName("Auth")
+        self.Auth.setGeometry(QRect(0, 0, 431, 341))
+
         self.label = QLabel(self.Auth)
-        self.label.setObjectName(u"label")
-        self.label.setGeometry(QRect(90, 120, 53, 26))
-        font = QFont()
-        font.setPointSize(14)
-        self.label.setFont(font)
-        self.label.setStyleSheet(u"color: #FFFFFF")
+        self.label.setObjectName("label")
+        self.label.setGeometry(QRect(90, 120, 100, 26))
+        self.label.setFont(font14)
+
         self.lineEdit = QLineEdit(self.Auth)
-        self.lineEdit.setObjectName(u"lineEdit")
+        self.lineEdit.setObjectName("lineEdit")
         self.lineEdit.setGeometry(QRect(90, 150, 231, 31))
-        self.lineEdit.setFont(font)
-        self.lineEdit.setStyleSheet(u"border: 1px solid #689AD3; border-radius: 6px")
+        self.lineEdit.setFont(font14)
+
         self.label_2 = QLabel(self.Auth)
-        self.label_2.setObjectName(u"label_2")
+        self.label_2.setObjectName("label_2")
         self.label_2.setGeometry(QRect(160, 60, 126, 28))
-        font1 = QFont()
-        font1.setPointSize(16)
-        self.label_2.setFont(font1)
-        self.label_2.setStyleSheet(u"color: #FFFFFF")
+        self.label_2.setFont(font16)
+
         self.pushButton = QPushButton(self.Auth)
-        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setObjectName("pushButton")
         self.pushButton.setGeometry(QRect(160, 240, 113, 36))
-        self.pushButton.setFont(font)
-        self.pushButton.setStyleSheet(u"border: 1px solid #689AD3; border-radius: 6px; color: #FFFFFF")
-        self.Chat = QWidget(self.centralwidget)
-        self.Chat.setObjectName(u"Chat")
-        self.Chat.setGeometry(QRect(20, 0, 441, 591))
-        self.Chat.setStyleSheet(u"background-color: #0D56A6; border-radius: 20")
-        self.lineEdit_2 = QLineEdit(self.Chat)
-        self.lineEdit_2.setObjectName(u"lineEdit_2")
-        self.lineEdit_2.setGeometry(QRect(20, 530, 281, 41))
-        self.lineEdit_2.setFont(font)
-        self.lineEdit_2.setStyleSheet(u"border: 1px solid #689AD3; border-radius: 6px; color: #FFFFFF")
-        self.pushButton_2 = QPushButton(self.Chat)
-        self.pushButton_2.setObjectName(u"pushButton_2")
-        self.pushButton_2.setGeometry(QRect(320, 530, 101, 41))
-        self.pushButton_2.setFont(font)
-        self.pushButton_2.setStyleSheet(u"border: 1px solid #689AD3; border-radius: 6px; color: #FFFFFF")
-        self.Menu = QFrame(self.Chat)
-        self.Menu.setObjectName(u"Menu")
-        self.Menu.setGeometry(QRect(0, 0, 441, 61))
-        self.Menu.setStyleSheet(u"background-color: #0D50A6; border-radius: 0; border-top-left-radius: 20; border-top-right-radius: 20")
-        self.Menu.setFrameShape(QFrame.Shape.StyledPanel)
-        self.Menu.setFrameShadow(QFrame.Shadow.Raised)
-        self.textBrowser = QTextBrowser(self.Menu)
-        self.textBrowser.setObjectName(u"textBrowser")
-        self.textBrowser.setGeometry(QRect(30, 10, 110, 40))
-        self.textBrowser.setStyleSheet(u"color: #FFFFFF")
-        self.textBrowser_2 = QTextBrowser(self.Menu)
-        self.textBrowser_2.setObjectName(u"textBrowser_2")
-        self.textBrowser_2.setGeometry(QRect(120, 20, 60, 30))
-        self.textBrowser_2.setStyleSheet(u"color: #FFFFFF")
-        self.pushButton_3 = QPushButton(self.Menu)
-        self.pushButton_3.setObjectName(u"pushButton_3")
-        self.pushButton_3.setGeometry(QRect(320, 10, 91, 34))
-        self.pushButton_3.setFont(font)
-        self.pushButton_3.setStyleSheet(u"border: 1px solid #689AD3; border-radius: 6; color: #FFFFFF")
-        self.Messages = QWidget(self.Chat)
-        self.Messages.setObjectName(u"Messages")
-        self.Messages.setGeometry(QRect(10, 70, 421, 441))
-        self.Messages.setStyleSheet(u"border: 1px solid #689AD3")
+        self.pushButton.setFont(font14)
+
+        # --------------------------- ListChats --------------------------
         self.ListChats = QWidget(self.centralwidget)
-        self.ListChats.setObjectName(u"ListChats")
-        self.ListChats.setGeometry(QRect(470, 350, 431, 461))
-        self.ListChats.setStyleSheet(u"background-color: #0D56A6; border-radius: 20")
+        self.ListChats.setObjectName("ListChats")
+        self.ListChats.setGeometry(QRect(0, 0, 431, 461))
+
         self.Menu_2 = QFrame(self.ListChats)
-        self.Menu_2.setObjectName(u"Menu_2")
+        self.Menu_2.setObjectName("Menu_2")
         self.Menu_2.setGeometry(QRect(0, 0, 431, 61))
-        self.Menu_2.setStyleSheet(u"background-color: #0D50A6; border-radius: 0; border-top-left-radius: 20; border-top-right-radius: 20")
         self.Menu_2.setFrameShape(QFrame.Shape.StyledPanel)
         self.Menu_2.setFrameShadow(QFrame.Shadow.Raised)
+
         self.label_3 = QLabel(self.Menu_2)
-        self.label_3.setObjectName(u"label_3")
-        self.label_3.setGeometry(QRect(30, 20, 118, 26))
-        self.label_3.setFont(font)
-        self.label_3.setStyleSheet(u"color: #FFFFFF")
+        self.label_3.setObjectName("label_3")
+        self.label_3.setGeometry(QRect(30, 18, 200, 26))
+        self.label_3.setFont(font14)
+
         self.List = QWidget(self.ListChats)
-        self.List.setObjectName(u"List")
+        self.List.setObjectName("List")
         self.List.setGeometry(QRect(0, 60, 431, 401))
-        self.ListItem = QWidget(self.List)
-        self.ListItem.setObjectName(u"ListItem")
-        self.ListItem.setGeometry(QRect(0, 0, 431, 51))
-        self.ListItem.setStyleSheet(u"border: 1px solid #0D56A0; border-radius: 0")
-        self.label_4 = QLabel(self.ListItem)
-        self.label_4.setObjectName(u"label_4")
-        self.label_4.setGeometry(QRect(20, 10, 139, 28))
-        self.label_4.setFont(font)
-        self.label_4.setStyleSheet(u"color: #FFFFFF")
-        self.label_5 = QLabel(self.ListItem)
-        self.label_5.setObjectName(u"label_5")
-        self.label_5.setGeometry(QRect(160, 20, 41, 18))
-        font2 = QFont()
-        font2.setPointSize(9)
-        self.label_5.setFont(font2)
-        self.label_5.setStyleSheet(u"color: #FFFFFF")
-        self.ListItem_2 = QWidget(self.List)
-        self.ListItem_2.setObjectName(u"ListItem_2")
-        self.ListItem_2.setGeometry(QRect(0, 50, 431, 51))
-        self.ListItem_2.setStyleSheet(u"border: 1px solid #0D56A6; border-radius: 0")
-        self.label_8 = QLabel(self.ListItem_2)
-        self.label_8.setObjectName(u"label_8")
-        self.label_8.setGeometry(QRect(20, 10, 139, 28))
-        self.label_8.setFont(font)
-        self.label_8.setStyleSheet(u"color: #FFFFFF")
-        self.label_9 = QLabel(self.ListItem_2)
-        self.label_9.setObjectName(u"label_9")
-        self.label_9.setGeometry(QRect(120, 20, 41, 18))
-        self.label_9.setFont(font2)
-        self.label_9.setStyleSheet(u"color: #FFFFFF")
-        self.ListItem_3 = QWidget(self.List)
-        self.ListItem_3.setObjectName(u"ListItem_3")
-        self.ListItem_3.setGeometry(QRect(0, 100, 431, 51))
-        self.ListItem_3.setStyleSheet(u"border: 1px solid #0D56A6; border-radius: 0")
-        self.label_10 = QLabel(self.ListItem_3)
-        self.label_10.setObjectName(u"label_10")
-        self.label_10.setGeometry(QRect(20, 10, 139, 28))
-        self.label_10.setFont(font)
-        self.label_10.setStyleSheet(u"color: #FFFFFF")
-        self.label_11 = QLabel(self.ListItem_3)
-        self.label_11.setObjectName(u"label_11")
-        self.label_11.setGeometry(QRect(120, 20, 41, 18))
-        self.label_11.setFont(font2)
-        self.label_11.setStyleSheet(u"color: #FFFFFF")
-        self.ListItem_4 = QWidget(self.List)
-        self.ListItem_4.setObjectName(u"ListItem_4")
-        self.ListItem_4.setGeometry(QRect(0, 150, 431, 51))
-        self.ListItem_4.setStyleSheet(u"border: 1px solid #0D56A6; border-radius: 0")
-        self.label_12 = QLabel(self.ListItem_4)
-        self.label_12.setObjectName(u"label_12")
-        self.label_12.setGeometry(QRect(20, 10, 139, 28))
-        self.label_12.setFont(font)
-        self.label_12.setStyleSheet(u"color: #FFFFFF")
-        self.label_13 = QLabel(self.ListItem_4)
-        self.label_13.setObjectName(u"label_13")
-        self.label_13.setGeometry(QRect(120, 20, 41, 18))
-        self.label_13.setFont(font2)
-        self.label_13.setStyleSheet(u"color: #FFFFFF")
-        self.ListItem_5 = QWidget(self.List)
-        self.ListItem_5.setObjectName(u"ListItem_5")
-        self.ListItem_5.setGeometry(QRect(0, 200, 431, 51))
-        self.ListItem_5.setStyleSheet(u"border: 1px solid #0D56A6; border-radius: 0")
-        self.label_14 = QLabel(self.ListItem_5)
-        self.label_14.setObjectName(u"label_14")
-        self.label_14.setGeometry(QRect(20, 10, 139, 28))
-        self.label_14.setFont(font)
-        self.label_14.setStyleSheet(u"color: #FFFFFF")
-        self.label_15 = QLabel(self.ListItem_5)
-        self.label_15.setObjectName(u"label_15")
-        self.label_15.setGeometry(QRect(120, 20, 41, 18))
-        self.label_15.setFont(font2)
-        self.label_15.setStyleSheet(u"color: #FFFFFF")
-        self.ListItem_6 = QWidget(self.List)
-        self.ListItem_6.setObjectName(u"ListItem_6")
-        self.ListItem_6.setGeometry(QRect(0, 250, 431, 51))
-        self.ListItem_6.setStyleSheet(u"border: 1px solid #0D56A6; border-radius: 0")
-        self.label_18 = QLabel(self.ListItem_6)
-        self.label_18.setObjectName(u"label_18")
-        self.label_18.setGeometry(QRect(20, 10, 139, 28))
-        self.label_18.setFont(font)
-        self.label_18.setStyleSheet(u"color: #FFFFFF")
-        self.label_19 = QLabel(self.ListItem_6)
-        self.label_19.setObjectName(u"label_19")
-        self.label_19.setGeometry(QRect(120, 20, 41, 18))
-        self.label_19.setFont(font2)
-        self.label_19.setStyleSheet(u"color: #FFFFFF")
+
+        self.pushButton_add = QPushButton(self.List)
+        self.pushButton_add.setObjectName("pushButton_add")
+        self.pushButton_add.setGeometry(QRect(10, 5, 200, 36))
+        self.pushButton_add.setFont(font14)
+
+        self.pushButton_theme = QPushButton(self.List)
+        self.pushButton_theme.setObjectName("pushButton_theme")
+        self.pushButton_theme.setGeometry(QRect(215, 5, 100, 36))
+        self.pushButton_theme.setFont(font14)
+
+        self.pushButton_clear = QPushButton(self.List)
+        self.pushButton_clear.setObjectName("pushButton_clear")
+        self.pushButton_clear.setGeometry(QRect(320, 5, 101, 36))
+        self.pushButton_clear.setFont(font14)
+
+        self.listChats = QListWidget(self.List)
+        self.listChats.setObjectName("listChats")
+        self.listChats.setGeometry(QRect(0, 50, 431, 351))
+        self.listChats.setFont(font14)
+
+        # ------------------------------ Chat ----------------------------
+        self.Chat = QWidget(self.centralwidget)
+        self.Chat.setObjectName("Chat")
+        self.Chat.setGeometry(QRect(0, 0, 441, 591))
+
+        self.Menu = QFrame(self.Chat)
+        self.Menu.setObjectName("Menu")
+        self.Menu.setGeometry(QRect(0, 0, 441, 61))
+        self.Menu.setFrameShape(QFrame.Shape.StyledPanel)
+        self.Menu.setFrameShadow(QFrame.Shadow.Raised)
+
+        self.label_title = QLabel(self.Menu)
+        self.label_title.setObjectName("label_title")
+        self.label_title.setGeometry(QRect(20, 8, 280, 28))
+        self.label_title.setFont(font14)
+
+        self.label_status = QLabel(self.Menu)
+        self.label_status.setObjectName("label_status")
+        self.label_status.setGeometry(QRect(22, 36, 200, 18))
+        self.label_status.setFont(font9)
+
+        self.pushButton_3 = QPushButton(self.Menu)
+        self.pushButton_3.setObjectName("pushButton_3")
+        self.pushButton_3.setGeometry(QRect(320, 12, 91, 34))
+        self.pushButton_3.setFont(font14)
+
+        self.Messages = QWidget(self.Chat)
+        self.Messages.setObjectName("Messages")
+        self.Messages.setGeometry(QRect(10, 70, 421, 441))
+
+        self.messages = QTextEdit(self.Messages)
+        self.messages.setObjectName("messages")
+        self.messages.setGeometry(QRect(0, 0, 421, 441))
+        self.messages.setFont(font14)
+        self.messages.setReadOnly(True)
+
+        self.lineEdit_2 = QLineEdit(self.Chat)
+        self.lineEdit_2.setObjectName("lineEdit_2")
+        self.lineEdit_2.setGeometry(QRect(20, 530, 281, 41))
+        self.lineEdit_2.setFont(font14)
+
+        self.pushButton_2 = QPushButton(self.Chat)
+        self.pushButton_2.setObjectName("pushButton_2")
+        self.pushButton_2.setGeometry(QRect(320, 530, 101, 41))
+        self.pushButton_2.setFont(font14)
+
         MainWindow.setCentralWidget(self.centralwidget)
+
         self.menubar = QMenuBar(MainWindow)
-        self.menubar.setObjectName(u"menubar")
+        self.menubar.setObjectName("menubar")
         self.menubar.setGeometry(QRect(0, 0, 1109, 33))
         MainWindow.setMenuBar(self.menubar)
+
         self.statusbar = QStatusBar(MainWindow)
-        self.statusbar.setObjectName(u"statusbar")
+        self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+
         self.toolBar = QToolBar(MainWindow)
-        self.toolBar.setObjectName(u"toolBar")
+        self.toolBar.setObjectName("toolBar")
         MainWindow.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolBar)
 
         self.retranslateUi(MainWindow)
-
         QMetaObject.connectSlotsByName(MainWindow)
-    # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"\u041b\u043e\u0433\u0438\u043d", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"\u0410\u0432\u0442\u043e\u0440\u0438\u0437\u0430\u0446\u0438\u044f", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0412\u043e\u0439\u0442\u0438", None))
-        self.lineEdit_2.setText(QCoreApplication.translate("MainWindow", u"Hello World", None))
-        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c", None))
-        self.textBrowser.setHtml(QCoreApplication.translate("MainWindow", u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-"<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
-"p, li { white-space: pre-wrap; }\n"
-"hr { height: 1px; border-width: 0; }\n"
-"li.unchecked::marker { content: \"\\2610\"; }\n"
-"li.checked::marker { content: \"\\2612\"; }\n"
-"</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:14pt;\">Username</span></p></body></html>", None))
-        self.textBrowser_2.setHtml(QCoreApplication.translate("MainWindow", u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-"<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
-"p, li { white-space: pre-wrap; }\n"
-"hr { height: 1px; border-width: 0; }\n"
-"li.unchecked::marker { content: \"\\2610\"; }\n"
-"li.checked::marker { content: \"\\2612\"; }\n"
-"</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">online</p></body></html>", None))
-        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"\u041d\u0430\u0437\u0430\u0434", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043f\u0438\u0441\u043e\u043a \u0447\u0430\u0442\u043e\u0432", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"\u0413\u0440\u0443\u043f\u043f\u043e\u0432\u043e\u0439 \u0447\u0430\u0442", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"online", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"Username", None))
-        self.label_9.setText(QCoreApplication.translate("MainWindow", u"online", None))
-        self.label_10.setText(QCoreApplication.translate("MainWindow", u"Username", None))
-        self.label_11.setText(QCoreApplication.translate("MainWindow", u"online", None))
-        self.label_12.setText(QCoreApplication.translate("MainWindow", u"Username", None))
-        self.label_13.setText(QCoreApplication.translate("MainWindow", u"online", None))
-        self.label_14.setText(QCoreApplication.translate("MainWindow", u"Username", None))
-        self.label_15.setText(QCoreApplication.translate("MainWindow", u"online", None))
-        self.label_18.setText(QCoreApplication.translate("MainWindow", u"Username", None))
-        self.label_19.setText(QCoreApplication.translate("MainWindow", u"online", None))
-        self.toolBar.setWindowTitle(QCoreApplication.translate("MainWindow", u"toolBar", None))
-    # retranslateUi
-
+        MainWindow.setWindowTitle(
+            QCoreApplication.translate("MainWindow", "Messenger", None))
+        self.label.setText(
+            QCoreApplication.translate("MainWindow", "Логин", None))
+        self.label_2.setText(
+            QCoreApplication.translate("MainWindow", "Авторизация", None))
+        self.pushButton.setText(
+            QCoreApplication.translate("MainWindow", "Войти", None))
+        self.label_3.setText(
+            QCoreApplication.translate("MainWindow", "Список чатов", None))
+        self.pushButton_add.setText(
+            QCoreApplication.translate("MainWindow", "Добавить", None))
+        self.pushButton_theme.setText(
+            QCoreApplication.translate("MainWindow", "Сменить тему", None))
+        self.pushButton_clear.setText(
+            QCoreApplication.translate("MainWindow", "Очистить", None))
+        self.label_title.setText(
+            QCoreApplication.translate("MainWindow", "Чат", None))
+        self.label_status.setText(
+            QCoreApplication.translate("MainWindow", "online", None))
+        self.pushButton_3.setText(
+            QCoreApplication.translate("MainWindow", "Назад", None))
+        self.lineEdit_2.setPlaceholderText(
+            QCoreApplication.translate("MainWindow", "Сообщение", None))
+        self.pushButton_2.setText(
+            QCoreApplication.translate("MainWindow", "Отправить", None))
+        self.toolBar.setWindowTitle(
+            QCoreApplication.translate("MainWindow", "toolBar", None))

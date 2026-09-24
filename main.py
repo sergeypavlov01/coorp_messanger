@@ -1,5 +1,6 @@
-"""Клиент мессенджера: авторизация, список чатов, диалог.
-   Работает по WebSocket, история и список контактов хранятся локально.
+"""Клиент мессенджера на PySide6 + WebSocket.
+   Три экрана: авторизация, список чатов, диалог.
+   История и список контактов хранятся локально в JSON.
 """
 
 import asyncio
@@ -18,17 +19,10 @@ from PySide6.QtCore import QSettings, QTimer, QUrl, Qt
 from PySide6.QtWebSockets import QWebSocket
 from PySide6.QtWidgets import (
     QApplication,
-    QHBoxLayout,
     QInputDialog,
-    QLabel,
-    QListWidget,
     QListWidgetItem,
     QMainWindow,
     QMessageBox,
-    QPushButton,
-    QStackedWidget,
-    QTextEdit,
-    QVBoxLayout,
     QWidget,
 )
 from qasync import QEventLoop, asyncClose
@@ -59,10 +53,6 @@ PAGE_CHAT = 2
 GENERAL_CHAT = {"id": "__general__", "name": "Общий чат", "general": True}
 REFRESH_MS = 3000
 
-
-# ---------------------------------------------------------------------
-#  Оформление
-# ---------------------------------------------------------------------
 
 THEMES = {
     "dark": {
@@ -131,269 +121,74 @@ class MainWindow(QMainWindow):
         self.my_id = None
         self.current_chat = None
         self.authorized = False
+        self.current_page = PAGE_AUTH
 
         self.settings = QSettings("coorp_messanger", "client")
         self.theme_name = self.settings.value("theme", "dark")
 
-        # кеши
         self.history = file_read(HISTORY_FILE)
         self.users = file_read(USERS_FILE)
 
-        self._build_screens()
-        self._build_header()
-        self._build_chat_list()
-        self._build_messages()
         self._wire_buttons()
         self._apply_theme(self.theme_name)
         self._restore_login()
 
-        # фоновые задачи и таймер
+        # показываем только экран авторизации
+        self._show_page(PAGE_AUTH)
+
         QTimer.singleShot(0, self._start_tasks)
         self.refresh_timer = QTimer(self)
         self.refresh_timer.timeout.connect(self._refresh_chat_list)
         self.refresh_timer.start(REFRESH_MS)
 
     # -----------------------------------------------------------------
-    #  Разметка
+    #  Экраны
     # -----------------------------------------------------------------
 
-    def _build_screens(self):
-        self.stack = QStackedWidget()
-        self.stack.addWidget(self._center(self.ui.Auth, 431, 341))
-        self.stack.addWidget(self._center(self.ui.ListChats, 431, 461))
-        self.stack.addWidget(self._center(self.ui.Chat, 441, 591))
-        self.setCentralWidget(self.stack)
-        self.stack.setCurrentIndex(PAGE_AUTH)
+    def _show_page(self, page: int) -> None:
+        self.current_page = page
+        self.ui.Auth.setVisible(page == PAGE_AUTH)
+        self.ui.ListChats.setVisible(page == PAGE_LIST)
+        self.ui.Chat.setVisible(page == PAGE_CHAT)
+        self._center_visible()
 
-    def _center(self, widget, w, h):
-        widget.setParent(None)
-        widget.setFixedSize(w, h)
-        box = QWidget()
-        col = QVBoxLayout(box)
-        col.addStretch()
-        row = QHBoxLayout()
-        row.addStretch()
-        row.addWidget(widget)
-        row.addStretch()
-        col.addLayout(row)
-        col.addStretch()
-        return box
+    def _center_visible(self) -> None:
+        cw = self.ui.centralwidget
+        target: QWidget | None = None
+        if self.current_page == PAGE_AUTH:
+            target = self.ui.Auth
+        elif self.current_page == PAGE_LIST:
+            target = self.ui.ListChats
+        elif self.current_page == PAGE_CHAT:
+            target = self.ui.Chat
+        if target is None:
+            return
+        x = max(0, (cw.width() - target.width()) // 2)
+        y = max(0, (cw.height() - target.height()) // 2)
+        target.move(x, y)
 
-    def _build_header(self):
-        # в ui.py шапка чата сделана из QTextBrowser, меняем на QLabel
-        old = self.ui.textBrowser
-        self.title_label = QLabel(old.parent())
-        self.title_label.setGeometry(old.geometry())
-        self.title_label.setText("")
-        old.hide()
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._center_visible()
 
-        old = self.ui.textBrowser_2
-        self.status_label = QLabel(old.parent())
-        self.status_label.setGeometry(old.geometry())
-        self.status_label.setText("")
-        old.hide()
-
-    def _build_chat_list(self):
-        for name in ("ListItem", "ListItem_2", "ListItem_3",
-                     "ListItem_4", "ListItem_5", "ListItem_6"):
-            getattr(self.ui, name).hide()
-
-        self.add_button = QPushButton("Добавить", self.ui.List)
-        self.add_button.setGeometry(10, 5, 200, 36)
-        self.add_button.clicked.connect(self._add_chat_dialog)
-
-        self.theme_button = QPushButton("Тема", self.ui.List)
-        self.theme_button.setGeometry(220, 5, 100, 36)
-        self.theme_button.clicked.connect(self._toggle_theme)
-
-        self.clear_button = QPushButton("Очистить", self.ui.List)
-        self.clear_button.setGeometry(330, 5, 91, 36)
-        self.clear_button.clicked.connect(self._clear_history_dialog)
-
-        self.chat_list = QListWidget(self.ui.List)
-        self.chat_list.setGeometry(0, 50, 431, 401)
-        self.chat_list.itemClicked.connect(self._open_chat)
-
-        self._refresh_chat_list()
-
-    def _build_messages(self):
-        self.messages = QTextEdit(self.ui.Messages)
-        self.messages.setGeometry(0, 0, 421, 441)
-        self.messages.setReadOnly(True)
+    # -----------------------------------------------------------------
+    #  Кнопки
+    # -----------------------------------------------------------------
 
     def _wire_buttons(self):
         self.ui.pushButton.clicked.connect(self._login)
         self.ui.pushButton_2.clicked.connect(self._send)
         self.ui.lineEdit_2.returnPressed.connect(self._send)
         self.ui.pushButton_3.clicked.connect(self._back_to_list)
+        self.ui.pushButton_add.clicked.connect(self._add_chat_dialog)
+        self.ui.pushButton_theme.clicked.connect(self._toggle_theme)
+        self.ui.pushButton_clear.clicked.connect(self._clear_history_dialog)
+        self.ui.listChats.itemClicked.connect(self._open_chat)
 
     def _restore_login(self):
         last = self.settings.value("last_username", "")
         if last:
             self.ui.lineEdit.setText(last)
-
-    # -----------------------------------------------------------------
-    #  Стили
-    # -----------------------------------------------------------------
-
-    def _apply_theme(self, name):
-        if name not in THEMES:
-            name = "dark"
-        self.theme_name = name
-        t = THEMES[name]
-
-        self.setStyleSheet(f"QMainWindow {{ background-color: {t['window']}; }}")
-
-        for w in (self.ui.Auth, self.ui.Chat, self.ui.ListChats):
-            w.setStyleSheet(
-                f"background-color: {t['panel']}; border-radius: 18px;"
-            )
-
-        for w in (self.ui.Menu, self.ui.Menu_2):
-            w.setStyleSheet(
-                f"background-color: {t['header']};"
-                "border-radius: 0;"
-                "border-top-left-radius: 18px;"
-                "border-top-right-radius: 18px;"
-            )
-
-        self.ui.Messages.setStyleSheet(f"border: 1px solid {t['border']};")
-        self.ui.List.setStyleSheet("background: transparent;")
-
-        for lbl in (self.ui.label, self.ui.label_2, self.ui.label_3):
-            lbl.setStyleSheet(
-                f"color: {t['text']}; background: transparent;"
-            )
-
-        edit_qss = (
-            f"QLineEdit {{"
-            f"  background: {t['input_bg']};"
-            f"  color: {t['text']};"
-            f"  border: 1px solid {t['input_border']};"
-            f"  border-radius: 6px;"
-            f"  padding: 4px 8px;"
-            f"}}"
-        )
-        self.ui.lineEdit.setStyleSheet(edit_qss)
-        self.ui.lineEdit_2.setStyleSheet(edit_qss)
-
-        btn_qss = (
-            f"QPushButton {{"
-            f"  background: {t['btn_bg']};"
-            f"  color: #ffffff;"
-            f"  border: 1px solid {t['border']};"
-            f"  border-radius: 6px;"
-            f"  padding: 4px 10px;"
-            f"  font-size: 12px;"
-            f"}}"
-            f"QPushButton:hover {{ background: {t['btn_hover']}; }}"
-            f"QPushButton:disabled {{ background: {t['border']}; }}"
-        )
-        for b in (self.ui.pushButton, self.ui.pushButton_2, self.ui.pushButton_3,
-                  self.add_button, self.theme_button, self.clear_button):
-            b.setStyleSheet(btn_qss)
-
-        self.chat_list.setStyleSheet(
-            f"QListWidget {{"
-            f"  background: transparent; border: none;"
-            f"  color: {t['text']}; font-size: 13px;"
-            f"}}"
-            f"QListWidget::item {{"
-            f"  padding: 10px 14px;"
-            f"  border-bottom: 1px solid {t['list_line']};"
-            f"}}"
-            f"QListWidget::item:selected {{ background: {t['list_sel']}; }}"
-        )
-
-        self.messages.setStyleSheet(
-            f"QTextEdit {{"
-            f"  background: transparent; border: none;"
-            f"  color: {t['text']}; font-size: 13px; padding: 8px;"
-            f"}}"
-        )
-
-        self.title_label.setStyleSheet(
-            f"color: {t['text']}; font-size: 15px; background: transparent;"
-        )
-        self.status_label.setStyleSheet(
-            f"color: {t['muted']}; font-size: 11px; background: transparent;"
-        )
-
-        self.theme_button.setText(
-            "Светлая" if name == "dark" else "Тёмная"
-        )
-
-    def _toggle_theme(self):
-        new = "light" if self.theme_name == "dark" else "dark"
-        self._apply_theme(new)
-        self.settings.setValue("theme", new)
-
-    # -----------------------------------------------------------------
-    #  Кеш
-    # -----------------------------------------------------------------
-
-    def _chat_key(self, chat):
-        return chat.get("name") or str(chat.get("id", ""))
-
-    def _remember_user(self, user):
-        name = user.get("name")
-        if not name:
-            return
-        self.users[name] = {"id": user.get("id"), "name": name}
-        file_write(USERS_FILE, self.users)
-
-    def _add_to_history(self, key, author, text):
-        self.history.setdefault(key, []).append({
-            "author": author,
-            "text": text,
-            "ts": time.time(),
-        })
-        if len(self.history[key]) > 500:
-            self.history[key] = self.history[key][-500:]
-        file_write(HISTORY_FILE, self.history)
-
-    def _render_history(self, key):
-        self.messages.clear()
-        for m in self.history.get(key, []):
-            self.messages.append(
-                f"<b>{m.get('author','')}:</b> {m.get('text','')}"
-            )
-        bar = self.messages.verticalScrollBar()
-        bar.setValue(bar.maximum())
-
-    def _refresh_chat_list(self):
-        """Перерисовывает список из кеша. Держит текущий выбор."""
-        selected_name = None
-        if self.chat_list.currentItem():
-            selected_name = self._chat_key(
-                self.chat_list.currentItem().data(Qt.UserRole) or {}
-            )
-
-        self.chat_list.blockSignals(True)
-        self.chat_list.clear()
-
-        item = QListWidgetItem(GENERAL_CHAT["name"])
-        item.setData(Qt.UserRole, GENERAL_CHAT)
-        self.chat_list.addItem(item)
-
-        for name in sorted(self.users.keys()):
-            u = self.users[name]
-            it = QListWidgetItem(name)
-            it.setData(Qt.UserRole, {"id": u.get("id"), "name": name})
-            self.chat_list.addItem(it)
-
-        if selected_name:
-            for i in range(self.chat_list.count()):
-                u = self.chat_list.item(i).data(Qt.UserRole) or {}
-                if u.get("name") == selected_name:
-                    self.chat_list.setCurrentRow(i)
-                    break
-
-        self.chat_list.blockSignals(False)
-
-    # -----------------------------------------------------------------
-    #  Кнопки
-    # -----------------------------------------------------------------
 
     def _login(self):
         name = self.ui.lineEdit.text().strip()
@@ -427,8 +222,8 @@ class MainWindow(QMainWindow):
 
     def _back_to_list(self):
         self.current_chat = None
-        self.messages.clear()
-        self.stack.setCurrentIndex(PAGE_LIST)
+        self.ui.messages.clear()
+        self._show_page(PAGE_LIST)
 
     def _open_chat(self, item):
         user = item.data(Qt.UserRole)
@@ -436,12 +231,12 @@ class MainWindow(QMainWindow):
             return
 
         self.current_chat = user
-        self.title_label.setText(user.get("name", ""))
-        self.status_label.setText(
+        self.ui.label_title.setText(user.get("name", ""))
+        self.ui.label_status.setText(
             "трансляция" if user.get("general") else "online"
         )
         self._render_history(self._chat_key(user))
-        self.stack.setCurrentIndex(PAGE_CHAT)
+        self._show_page(PAGE_CHAT)
 
     def _add_chat_dialog(self):
         name, ok = QInputDialog.getText(self, "Новый чат", "Имя пользователя:")
@@ -454,28 +249,186 @@ class MainWindow(QMainWindow):
             file_write(USERS_FILE, self.users)
 
         self._refresh_chat_list()
-        for i in range(self.chat_list.count()):
-            u = self.chat_list.item(i).data(Qt.UserRole) or {}
+        for i in range(self.ui.listChats.count()):
+            u = self.ui.listChats.item(i).data(Qt.UserRole) or {}
             if u.get("name") == name:
-                self.chat_list.setCurrentRow(i)
+                self.ui.listChats.setCurrentRow(i)
                 break
 
     def _clear_history_dialog(self):
-        item = self.chat_list.currentItem()
+        item = self.ui.listChats.currentItem()
         if not item:
             return
         user = item.data(Qt.UserRole) or {}
         key = self._chat_key(user)
 
         answer = QMessageBox.question(
-            self, "Очистить", f"Удалить историю чата с «{key}»?"
+            self, "Очистить", f"Удалить историю чата «{key}»?"
         )
         if answer != QMessageBox.Yes:
             return
 
         self.history.pop(key, None)
         file_write(HISTORY_FILE, self.history)
-        self.messages.clear()
+        self.ui.messages.clear()
+
+    # -----------------------------------------------------------------
+    #  Стиль
+    # -----------------------------------------------------------------
+
+    def _apply_theme(self, name: str):
+        if name not in THEMES:
+            name = "dark"
+        self.theme_name = name
+        t = THEMES[name]
+
+        self.setStyleSheet(f"QMainWindow {{ background-color: {t['window']}; }}")
+        self.ui.centralwidget.setStyleSheet(
+            f"background-color: {t['window']};"
+        )
+
+        for w in (self.ui.Auth, self.ui.Chat, self.ui.ListChats):
+            w.setStyleSheet(
+                f"background-color: {t['panel']}; border-radius: 18px;"
+            )
+
+        for w in (self.ui.Menu, self.ui.Menu_2):
+            w.setStyleSheet(
+                f"background-color: {t['header']};"
+                "border-radius: 0;"
+                "border-top-left-radius: 18px;"
+                "border-top-right-radius: 18px;"
+            )
+
+        self.ui.Messages.setStyleSheet(f"border: 1px solid {t['border']};")
+        self.ui.List.setStyleSheet("background: transparent;")
+
+        for lbl in (self.ui.label, self.ui.label_2, self.ui.label_3):
+            lbl.setStyleSheet(f"color: {t['text']}; background: transparent;")
+
+        edit_qss = (
+            f"QLineEdit {{"
+            f"  background: {t['input_bg']};"
+            f"  color: {t['text']};"
+            f"  border: 1px solid {t['input_border']};"
+            f"  border-radius: 6px;"
+            f"  padding: 4px 8px;"
+            f"}}"
+        )
+        self.ui.lineEdit.setStyleSheet(edit_qss)
+        self.ui.lineEdit_2.setStyleSheet(edit_qss)
+
+        btn_qss = (
+            f"QPushButton {{"
+            f"  background: {t['btn_bg']};"
+            f"  color: #ffffff;"
+            f"  border: 1px solid {t['border']};"
+            f"  border-radius: 6px;"
+            f"  padding: 4px 10px;"
+            f"  font-size: 12px;"
+            f"}}"
+            f"QPushButton:hover {{ background: {t['btn_hover']}; }}"
+            f"QPushButton:disabled {{ background: {t['border']}; }}"
+        )
+        for b in (self.ui.pushButton, self.ui.pushButton_2, self.ui.pushButton_3,
+                  self.ui.pushButton_add, self.ui.pushButton_theme,
+                  self.ui.pushButton_clear):
+            b.setStyleSheet(btn_qss)
+
+        self.ui.listChats.setStyleSheet(
+            f"QListWidget {{"
+            f"  background: transparent; border: none;"
+            f"  color: {t['text']}; font-size: 13px;"
+            f"}}"
+            f"QListWidget::item {{"
+            f"  padding: 10px 14px;"
+            f"  border-bottom: 1px solid {t['list_line']};"
+            f"}}"
+            f"QListWidget::item:selected {{ background: {t['list_sel']}; }}"
+        )
+
+        self.ui.messages.setStyleSheet(
+            f"QTextEdit {{"
+            f"  background: transparent; border: none;"
+            f"  color: {t['text']}; font-size: 13px; padding: 8px;"
+            f"}}"
+        )
+
+        self.ui.label_title.setStyleSheet(
+            f"color: {t['text']}; font-size: 15px; background: transparent;"
+        )
+        self.ui.label_status.setStyleSheet(
+            f"color: {t['muted']}; font-size: 11px; background: transparent;"
+        )
+
+        self.ui.pushButton_theme.setText(
+            "Светлая тема" if name == "dark" else "Тёмная тема"
+        )
+
+    def _toggle_theme(self):
+        new = "light" if self.theme_name == "dark" else "dark"
+        self._apply_theme(new)
+        self.settings.setValue("theme", new)
+
+    # -----------------------------------------------------------------
+    #  Локальные данные
+    # -----------------------------------------------------------------
+
+    def _chat_key(self, chat: dict) -> str:
+        return chat.get("name") or str(chat.get("id", ""))
+
+    def _remember_user(self, user: dict):
+        name = user.get("name")
+        if not name:
+            return
+        self.users[name] = {"id": user.get("id"), "name": name}
+        file_write(USERS_FILE, self.users)
+
+    def _add_to_history(self, key: str, author: str, text: str):
+        self.history.setdefault(key, []).append({
+            "author": author,
+            "text": text,
+            "ts": time.time(),
+        })
+        if len(self.history[key]) > 500:
+            self.history[key] = self.history[key][-500:]
+        file_write(HISTORY_FILE, self.history)
+
+    def _render_history(self, key: str):
+        self.ui.messages.clear()
+        for m in self.history.get(key, []):
+            self.ui.messages.append(
+                f"<b>{m.get('author','')}:</b> {m.get('text','')}"
+            )
+        bar = self.ui.messages.verticalScrollBar()
+        bar.setValue(bar.maximum())
+
+    def _refresh_chat_list(self):
+        lw = self.ui.listChats
+        selected_name = None
+        if lw.currentItem():
+            selected_name = self._chat_key(lw.currentItem().data(Qt.UserRole) or {})
+
+        lw.blockSignals(True)
+        lw.clear()
+
+        it = QListWidgetItem(GENERAL_CHAT["name"])
+        it.setData(Qt.UserRole, GENERAL_CHAT)
+        lw.addItem(it)
+
+        for name in sorted(self.users.keys()):
+            u = self.users[name]
+            item = QListWidgetItem(name)
+            item.setData(Qt.UserRole, {"id": u.get("id"), "name": name})
+            lw.addItem(item)
+
+        if selected_name:
+            for i in range(lw.count()):
+                u = lw.item(i).data(Qt.UserRole) or {}
+                if u.get("name") == selected_name:
+                    lw.setCurrentRow(i)
+                    break
+        lw.blockSignals(False)
 
     # -----------------------------------------------------------------
     #  WebSocket
@@ -497,7 +450,7 @@ class MainWindow(QMainWindow):
         self.authorized = False
         file_write(HISTORY_FILE, self.history)
         file_write(USERS_FILE, self.users)
-        self.stack.setCurrentIndex(PAGE_AUTH)
+        self._show_page(PAGE_AUTH)
         self.ui.pushButton.setEnabled(True)
         self.ui.pushButton.setText("Войти")
 
@@ -506,7 +459,7 @@ class MainWindow(QMainWindow):
         self.ui.pushButton.setEnabled(True)
         self.ui.pushButton.setText("Войти")
 
-    def _on_text(self, message):
+    def _on_text(self, message: str):
         if message == "CONNECTED":
             return
         try:
@@ -516,7 +469,7 @@ class MainWindow(QMainWindow):
             return
         self.queue.put_nowait(data)
 
-    async def _connect(self, username):
+    async def _connect(self, username: str):
         self.socket = QWebSocket()
         self.socket.connected.connect(self._on_connected)
         self.socket.disconnected.connect(self._on_disconnected)
@@ -531,7 +484,7 @@ class MainWindow(QMainWindow):
                 self.socket.close()
             self.socket = None
 
-    async def _send_message(self, text, user_to=None):
+    async def _send_message(self, text: str, user_to: dict | None = None):
         if self.socket is None or not self.socket.isValid():
             QMessageBox.warning(self, "Нет связи", "Соединение не установлено")
             return
@@ -582,11 +535,7 @@ class MainWindow(QMainWindow):
             else:
                 log.info("Ответ: %s", data)
 
-    # -----------------------------------------------------------------
-    #  События сервера
-    # -----------------------------------------------------------------
-
-    def _authorize(self, data):
+    def _authorize(self, data: dict):
         if self.authorized:
             return
         self.authorized = True
@@ -597,13 +546,12 @@ class MainWindow(QMainWindow):
 
         self.ui.pushButton.setEnabled(True)
         self.ui.pushButton.setText("Войти")
-        self.stack.setCurrentIndex(PAGE_LIST)
+        self._show_page(PAGE_LIST)
 
-    def _incoming(self, data):
+    def _incoming(self, data: dict):
         sender = data.get("fromUser") or {}
         name = sender.get("name", "")
         text = data.get("message", "")
-
         if not name:
             return
 
@@ -616,15 +564,14 @@ class MainWindow(QMainWindow):
 
         self._refresh_chat_list()
 
-    def _store(self, chat, author, text, label=""):
+    def _store(self, chat: dict, author: str, text: str, label: str = ""):
         key = self._chat_key(chat)
         self._add_to_history(key, author, text)
 
         active_key = self._chat_key(self.current_chat) if self.current_chat else None
-
         if active_key == key:
-            self.messages.append(f"<b>{label}{author}:</b> {text}")
-            bar = self.messages.verticalScrollBar()
+            self.ui.messages.append(f"<b>{label}{author}:</b> {text}")
+            bar = self.ui.messages.verticalScrollBar()
             bar.setValue(bar.maximum())
 
     # -----------------------------------------------------------------
@@ -647,7 +594,7 @@ class MainWindow(QMainWindow):
             log.exception("Ошибка в фоновой задаче")
 
     @asyncClose
-    async def closeEvent(self, event):
+    async def closeEvent(self, event: Any):
         file_write(HISTORY_FILE, self.history)
         file_write(USERS_FILE, self.users)
 
